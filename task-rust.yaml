@@ -1,0 +1,22 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: rust
+spec:
+  workspaces:
+    - name: source
+
+  steps:
+    - name: build
+      image: rust:1.93-slim
+      workingDir: $(workspaces.source.path)
+      script: |
+        # Set up caching (optional)
+        export CARGO_HOME=$(workspaces.source.path)/.cargo
+        cargo build --release
+
+    - name: test
+      image: rust:1.93-slim
+      workingDir: $(workspaces.source.path)
+      script: |
+        cargo test

@@ -1,0 +1,61 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: clone-build-push
+spec:
+  description: | 
+    This pipeline clones a git repo and builds a Docker image
+  
+  params:
+  - name: repo-url
+    type: string
+  - name: tag-name
+    type: string
+    description: The git tag to clone.
+  - name: image-full-path-with-tag
+    type: string
+    description: The image full path to host the built image, with version tag, e.g. image-registry.openshift-image-registry.svc:5000/tekton-pipelines/spring-boot-docker:v1.0.0.
+
+  workspaces:
+  - name: workspace
+  
+  tasks:
+  - name: fetch-repository
+    taskRef:
+      name: git-clone
+    workspaces:
+    - name: output
+      workspace: workspace
+    params:
+    - name: url
+      value: $(params.repo-url)
+    - name: revision
+      value: $(params.tag-name)
+    - name: deleteExisting
+      value: "true"
+
+  - name: rust-build
+    taskRef:
+      name: rust-build
+    runAfter:
+    - fetch-repository
+    workspace:
+    - name: source
+      workspace: workspace
+
+  - name: buildah
+    taskRef:
+      name: buildah
+    runAfter:
+    - rust-build
+    params:
+      - name: IMAGE
+        value: "$(params.image-full-path-with-tag)"
+      - name: TLSVERIFY
+        value: "false"
+      - name: STORAGE_DRIVER
+        value: "vfs"
+    workspaces:
+      - name: source
+        workspace: workspace
+
