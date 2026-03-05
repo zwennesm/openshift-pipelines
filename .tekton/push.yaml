@@ -1,10 +1,11 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  generateName: rust-http-build-
+  name: release-pipeline
   annotations:
     pipelinesascode.tekton.dev/on-event: "[push]"
     pipelinesascode.tekton.dev/on-target-branch: "[main]"
+    pipelinesascode.tekton.dev/task: "rust"
 spec:
   
   description: | 
@@ -18,57 +19,62 @@ spec:
   - name: full-image-name
     value: image-registry.openshift-image-registry.svc:5000/pipelines-tutorial/rust-http:{{ revision }}
 
-  workspaces:
-  - name: shared-workspace
-  
-  tasks:
-  - name: fetch-repository
-    taskRef:
-      resolver: cluster
-      params:
-      - name: kind
-        value: task
-      - name: name
-        value: git-clone
-      - name: namespace
-        value: openshift-pipelines
-    workspaces:
-    - name: output
-      workspace: shared-workspace
+  pipelineSpec:
     params:
-    - name: URL
-      value: $(params.git-url)
-    - name: SUBDIRECTORY
-      value: ""
-    - name: DELETE_EXISTING
-      value: "true"
-    - name: REVISION
-      value: $(params.git-revision)
-
-  - name: rust-build
-    taskRef:
-      name: rust
-    runAfter:
-    - fetch-repository
+      - name: repo_url
+      - name: revision
+      - name: full-image-name
     workspaces:
-    - name: source
-      workspace: shared-workspace
-
-  - name: build-image
-    taskRef:
-      resolver: cluster
+    - name: shared-workspace
+    
+    tasks:
+    - name: fetch-repository
+      taskRef:
+        resolver: cluster
+        params:
+        - name: kind
+          value: task
+        - name: name
+          value: git-clone
+        - name: namespace
+          value: openshift-pipelines
+      workspaces:
+      - name: output
+        workspace: shared-workspace
       params:
-      - name: kind
-        value: task
-      - name: name
-        value: buildah
-      - name: namespace
-        value: openshift-pipelines
-    workspaces:
-    - name: source
-      workspace: shared-workspace
-    params:
-    - name: IMAGE
-      value: $(params.full-image-name)
-    runAfter:
-    - rust-build
+      - name: URL
+        value: $(params.git-url)
+      - name: SUBDIRECTORY
+        value: ""
+      - name: DELETE_EXISTING
+        value: "true"
+      - name: REVISION
+        value: $(params.git-revision)
+
+    - name: rust-build
+      taskRef:
+        name: rust
+      runAfter:
+      - fetch-repository
+      workspaces:
+      - name: source
+        workspace: shared-workspace
+
+    - name: build-image
+      taskRef:
+        resolver: cluster
+        params:
+        - name: kind
+          value: task
+        - name: name
+          value: buildah
+        - name: namespace
+          value: openshift-pipelines
+      workspaces:
+      - name: source
+        workspace: shared-workspace
+      params:
+      - name: IMAGE
+        value: $(params.full-image-name)
+      runAfter:
+      - rust-build
