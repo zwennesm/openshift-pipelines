@@ -1,0 +1,9 @@
+apiVersion: pipelinesascode.tekton.dev/v1alpha1
+kind: Repository
+metadata:
+  name: openshift-pipelines
+spec:
+  url: https://github.com/zwennesm/openshift-pipelines
+  git_provider:
+    secret:
+      name: github-webhook-config
