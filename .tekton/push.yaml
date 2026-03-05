@@ -4,20 +4,73 @@ metadata:
   generateName: rust-http-build-
   annotations:
     pipelinesascode.tekton.dev/on-event: "[push]"
-    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+    pipelinesascode.tekton.dev/on-target-branch: "[refs/heads/main]"
 spec:
+  
+  description: | 
+    This pipeline clones a git repo and builds a Docker image
+  
   params:
-    - name: repo_url
-      value: "{{ repo_url }}"
-    - name: revision
-      value: "{{ revision }}"
-  pipelineRef:
-    name: clone-build-push
+  - name: git-url
+    type: string
+  - name: git-revision
+    type: string
+    description: The git tag to clone.
+  - name: full-image-name
+    type: string
+    description: image to be built from the code
+
   workspaces:
+  - name: shared-workspace
+  
+  tasks:
+  - name: fetch-repository
+    taskRef:
+      resolver: cluster
+      params:
+      - name: kind
+        value: task
+      - name: name
+        value: git-clone
+      - name: namespace
+        value: openshift-pipelines
+    workspaces:
+    - name: output
+      workspace: shared-workspace
+    params:
+    - name: URL
+      value: $(params.git-url)
+    - name: SUBDIRECTORY
+      value: ""
+    - name: DELETE_EXISTING
+      value: "true"
+    - name: REVISION
+      value: $(params.git-revision)
+
+  - name: rust-build
+    taskRef:
+      name: rust
+    runAfter:
+    - fetch-repository
+    workspaces:
     - name: source
-      volumeClaimTemplate:
-        spec:
-          accessModes: [ReadWriteOnce]
-          resources:
-            requests:
-              storage: 1Gi
+      workspace: shared-workspace
+
+  - name: build-image
+    taskRef:
+      resolver: cluster
+      params:
+      - name: kind
+        value: task
+      - name: name
+        value: buildah
+      - name: namespace
+        value: openshift-pipelines
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+    params:
+    - name: IMAGE
+      value: $(params.full-image-name)
+    runAfter:
+    - rust-build
