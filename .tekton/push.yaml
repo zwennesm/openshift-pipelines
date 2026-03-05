@@ -5,7 +5,6 @@ metadata:
   annotations:
     pipelinesascode.tekton.dev/on-event: "[push]"
     pipelinesascode.tekton.dev/on-target-branch: "[main]"
-    pipelinesascode.tekton.dev/task: "rust"
 spec:
   
   description: | 
@@ -53,7 +52,14 @@ spec:
 
     - name: rust-build
       taskRef:
-        name: rust
+        resolver: cluster
+        params:
+        - name: kind
+          value: task
+        - name: name
+          value: rust
+        - name: namespace
+          value: pipelines-tutorial
       runAfter:
       - fetch-repository
       workspaces:
