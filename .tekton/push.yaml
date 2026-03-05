@@ -12,13 +12,11 @@ spec:
   
   params:
   - name: git-url
-    type: string
+    value: "{{ repo_url }}"
   - name: git-revision
-    type: string
-    description: The git tag to clone.
+    value: "{{ revision }}"
   - name: full-image-name
-    type: string
-    description: image to be built from the code
+    value: image-registry.openshift-image-registry.svc:5000/pipelines-tutorial/rust-http:{{ revision }}
 
   workspaces:
   - name: shared-workspace
