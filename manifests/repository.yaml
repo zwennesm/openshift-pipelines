@@ -3,7 +3,7 @@ kind: Repository
 metadata:
   name: openshift-pipelines
 spec:
-  url: https://github.com/zwennesm/openshift-pipelines.git
+  url: https://github.com/zwennesm/openshift-pipelines
   git_provider:
     secret:
       name: github-webhook-config
