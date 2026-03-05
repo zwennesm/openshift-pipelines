@@ -3,7 +3,7 @@ kind: PipelineRun
 metadata:
   generateName: rust-http-build-
   annotations:
-    pipelinesascode.tekton.dev/on-event: "push"
+    pipelinesascode.tekton.dev/on-event: "[push]"
     pipelinesascode.tekton.dev/on-target-branch: "[main]"
 spec:
   params:
